@@ -1,7 +1,6 @@
 ALTER SYSTEM SET max_logical_replication_workers = 16;
--- ALTER SYSTEM SET max_replication_slots = 32;
 
--- Create the "kategori_barang" table
+-- Create the kategori_barang table
 CREATE TABLE "kategori_barang" (
     "id_kategori" INTEGER PRIMARY KEY,
     "nama_kategori" VARCHAR(45) NOT NULL
@@ -70,7 +69,7 @@ CREATE TABLE "supplier" (
     "nama_supplier" VARCHAR NOT NULL
 );
 
--- Create supplier shipment item table
+-- Create restok_barnag table
 CREATE TABLE "restok_barang" (
     "id_restok" INTEGER PRIMARY KEY,
     "id_barang" INTEGER,

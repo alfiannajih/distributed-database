@@ -19,8 +19,3 @@ PUBLICATION customer_pub;
 CREATE SUBSCRIPTION supplier_sub_2
 CONNECTION 'host=master-node port=5432 dbname=postgres password=postgres'
 PUBLICATION supplier_pub;
-
--- -- Replicate supplier_shipment from master-node
--- CREATE SUBSCRIPTION supplier_shipment_sub_2
--- CONNECTION 'host=master-node port=5432 dbname=postgres password=postgres'
--- PUBLICATION supplier_shipment_pub;

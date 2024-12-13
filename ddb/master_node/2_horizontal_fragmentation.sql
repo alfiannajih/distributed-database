@@ -23,7 +23,7 @@ CREATE TABLE "order_customer" (
     "id_customer" INTEGER NOT NULL
 ) PARTITION BY LIST ("id_gudang");
 
--- Create supplier shipment item table
+-- Create restok_barang table
 CREATE TABLE "restok_barang" (
     "id_restok" INTEGER GENERATED ALWAYS AS IDENTITY,
     "id_barang" INTEGER,
@@ -68,14 +68,14 @@ SELECT * FROM "order_customer_item_surabaya"
 UNION
 SELECT * FROM "order_customer_item_jakarta";
 
--- Trigger: View table of products
+-- Trigger: order_customer_item
 CREATE OR REPLACE FUNCTION order_customer_item()
 RETURNS TRIGGER AS $$
 DECLARE var_id_gudang INTEGER;
-DECLARE var_tanggal_order TIMESTAMP;
+DECLARE var_tanggal_diperbarui TIMESTAMP;
 BEGIN
     SELECT id_gudang FROM order_customer WHERE id_order = NEW.id_order INTO var_id_gudang;
-    SELECT tanggal_order FROM order_customer WHERE id_order = NEW.id_order INTO var_tanggal_order;
+    SELECT tanggal_order FROM order_customer WHERE id_order = NEW.id_order INTO var_tanggal_diperbarui;
 
     IF TG_OP = 'INSERT' THEN
 
@@ -87,8 +87,9 @@ BEGIN
 
         END IF;
 
+        SET TIME ZONE 'Asia/Jakarta';
         UPDATE stok_barang
-        SET stok = stok - NEW.jumlah, tanggal_diperbarui = var_tanggal_order
+        SET stok = stok - NEW.jumlah, tanggal_diperbarui = var_tanggal_diperbarui
         WHERE id_barang = NEW.id_barang AND id_gudang = var_id_gudang;
 
     ELSIF TG_OP = 'UPDATE' THEN
@@ -103,9 +104,10 @@ BEGIN
             WHERE id_order = NEW.id_order AND id_barang = NEW.id_barang;
 
         END IF;
-
+        
+        SET TIME ZONE 'Asia/Jakarta';
         UPDATE stok_barang
-        SET stok = stok + (OLD.jumlah - NEW.jumlah)
+        SET stok = stok + (OLD.jumlah - NEW.jumlah), tanggal_diperbarui = NOW()
         WHERE id_barang = OLD.id_barang AND id_gudang = var_id_gudang;
 
     ELSIF TG_OP = 'DELETE' THEN
@@ -118,9 +120,10 @@ BEGIN
             DELETE FROM "order_customer_item_jakarta" WHERE id_order = OLD.id_order AND id_barang = OLD.id_barang;
 
         END iF;
-
+        
+        SET TIME ZONE 'Asia/Jakarta';
         UPDATE stok_barang
-        SET stok = stok + OLD.jumlah
+        SET stok = stok + OLD.jumlah, tanggal_diperbarui = NOW()
         WHERE id_barang = OLD.id_barang AND id_gudang = var_id_gudang;
 
     END IF;
@@ -162,26 +165,3 @@ BEFORE INSERT
 ON restok_barang
 FOR EACH ROW
 EXECUTE FUNCTION update_restok_barang();
-
--- -- Trigger order customer
--- CREATE OR REPLACE FUNCTION update_order_customer_item()
--- RETURNS TRIGGER AS $$
--- DECLARE var_id_gudang INTEGER;
--- DECLARE var_tanggal_order TIMESTAMP;
--- BEGIN
---     SELECT id_gudang FROM order_customer WHERE id_order = NEW.id_order INTO var_id_gudang;
---     SELECT tanggal_order FROM order_customer WHERE id_order = NEW.id_order INTO var_tanggal_order;
-
---     UPDATE stok_barang
---     SET stok = stok - NEW.jumlah, tanggal_diperbarui = var_tanggal_order
---     WHERE id_barang = NEW.id_barang AND id_gudang = var_id_gudang;
-    
---     RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql;
-
--- CREATE TRIGGER trigger_restok_barang
--- BEFORE INSERT
--- ON order_customer_item
--- FOR EACH ROW
--- EXECUTE FUNCTION update_order_customer_item();

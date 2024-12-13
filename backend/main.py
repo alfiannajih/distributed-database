@@ -1,13 +1,12 @@
 from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload, load_only
-from sqlalchemy import text
+from sqlalchemy.orm import Session, load_only
 import uvicorn
 from datetime import datetime
 from typing import List
 
 from models import StokBarang, Gudang, Barang, RestokBarang, Supplier, Customer, OrderCustomer, OrderCustomerItem
-from schemas import RestokCreate, OrderCustomerCreate, OrderCustomerItemUpdate
+from schemas import RestokCreate, OrderCustomerCreate, OrderCustomerItemUpdate, OrderCustomerItemCreate
 
 from db import get_db
 
@@ -23,6 +22,62 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/products", tags=["Products"])
+def read_all_products(
+    details: bool=False,
+    db: Session=Depends(get_db)
+):
+    if details:
+        barang = db.query(Barang).order_by(Barang.nama_barang).all()
+    else:
+        barang = db.query(Barang).options(
+            load_only(Barang.id_barang, Barang.id_kategori, Barang.nama_barang, Barang.harga)
+        ).order_by(Barang.nama_barang).all()
+
+    results = {
+        "status": "success",
+        "message": "Products retrieved successfully",
+        "data": barang
+    }
+
+    return results    
+
+@app.get("/api/customers/{phone_number}", tags=["Customers"])
+def read_customer_by_phone(
+    phone_number: str,
+    db: Session=Depends(get_db)
+):
+    try:
+        customer = db.query(Customer).filter(Customer.no_telp == phone_number).one()
+
+    except:
+        raise HTTPException(404, "Customer not found!")
+    
+    results = {
+        "status": "success",
+        "message": "Customer retrieved successfully",
+        "data": customer
+    }
+
+    return results
+
+@app.get("/api/warhouses", tags=["Warehouses"])
+def check_server_status(
+    db: Session=Depends(get_db)
+):
+    disconnect_servers = []
+    
+    for i in range(1, 3):
+        # with get_db() as db:
+        try:
+            db.query(Gudang.id_gudang).filter(Gudang.id_gudang == i).one()
+
+        except:
+            db.rollback()
+            disconnect_servers.append(i)
+    
+    return {"disconnect_servers": disconnect_servers}
+
 # STOK BARANG
 # List stok
 @app.get("/api/stock", tags=["Warehouse Stock"])
@@ -31,9 +86,16 @@ def read_all_stok(
     id_barang: List[int]=Query(None),
     db: Session=Depends(get_db)
 ): # [{nama barang, lokasi gudang, stok, tanggal_diperbarui}]
-    query = db.query(Barang.nama_barang, Gudang.kota, StokBarang.stok, StokBarang.tanggal_diperbarui).\
+    query = db.query(
+        StokBarang.id_barang,
+        Barang.nama_barang,
+        StokBarang.id_gudang,
+        Gudang.kota,
+        StokBarang.stok,
+        StokBarang.tanggal_diperbarui
+    ).\
         join(Barang, Barang.id_barang == StokBarang.id_barang).\
-        join(Gudang, Gudang.id_gudang == StokBarang.id_gudang)
+        join(Gudang, Gudang.id_gudang == StokBarang.id_gudang).order_by(StokBarang.tanggal_diperbarui.desc())
     
     # Apply filters conditionally
     if id_barang is not None:
@@ -45,11 +107,14 @@ def read_all_stok(
     stok_barang = query.all()
     
     stok_barang_clean = [{
-        "nama_barang": d[0],
-        "lokasi_gudang": d[1],
-        "stok": d[2],
-        "tanggal_diperbarui": d[3]
-    } for d in stok_barang]
+        "number": i + 1,
+        "id_barang": d[0],
+        "nama_barang": d[1],
+        "id_gudang": d[2],
+        "lokasi_gudang": d[3],
+        "stok": d[4],
+        "tanggal_diperbarui": d[5].strftime("%Y-%m-%d, %H.%M.%S")
+    } for i, d in enumerate(stok_barang)]
 
     results = {
         "status": "success",
@@ -100,15 +165,19 @@ def read_all_restok(
 ): # [{id_restok, nama barang, lokasi gudang, nama_supplier, jumlah, tanggal_restok}]
     query = db.query(
         RestokBarang.id_restok,
+        RestokBarang.id_barang,
         Barang.nama_barang,
+        RestokBarang.id_gudang,
         Gudang.kota,
+        RestokBarang.id_supplier,
         Supplier.nama_supplier,
         RestokBarang.jumlah,
         RestokBarang.tanggal_restok
     ).\
         join(Barang, Barang.id_barang == RestokBarang.id_barang).\
         join(Gudang, Gudang.id_gudang == RestokBarang.id_gudang).\
-        join(Supplier, Supplier.id_supplier == RestokBarang.id_supplier)
+        join(Supplier, Supplier.id_supplier == RestokBarang.id_supplier).\
+        order_by(RestokBarang.tanggal_restok.desc())
     
     # Apply filters conditionally
     if id_barang is not None:
@@ -123,11 +192,14 @@ def read_all_restok(
     
     restok_barang_clean = [{
         "id_restok": d[0],
-        "nama_barang": d[1],
-        "lokasi_gudang": d[2],
-        "nama_supplier": d[3],
-        "jumlah": d[4],
-        "tanggal_restok": d[5]
+        "id_barang": d[1],
+        "nama_barang": d[2],
+        "id_gudang": d[3],
+        "lokasi_gudang": d[4],
+        "id_supplier": d[5],
+        "nama_supplier": d[6],
+        "jumlah": d[7],
+        "tanggal_restok": d[8].strftime("%Y-%m-%d, %H.%M.%S")
     } for d in restok_barang]
 
     results = {
@@ -208,36 +280,52 @@ def read_all_orders(
     id_customer: List[int]=Query(None),
     db: Session=Depends(get_db)
 ): #[{id_order, nama, no_telp, lokasi_gudang, tanggal_order}]
+    # disconnect_servers = check_server_status(db)
+    
     query = db.query(
         OrderCustomer.id_order,
+        OrderCustomer.id_customer,
         Customer.nama,
         Customer.no_telp,
+        OrderCustomer.id_gudang,
         Gudang.kota,
         OrderCustomer.tanggal_order
     ).\
         join(Customer, Customer.id_customer == OrderCustomer.id_customer).\
-        join(Gudang, Gudang.id_gudang == OrderCustomer.id_gudang)
+        join(Gudang, Gudang.id_gudang == OrderCustomer.id_gudang).order_by(OrderCustomer.tanggal_order.desc())
     
     # Apply filters conditionally
     if id_customer is not None:
-        query = query.filter(Customer.id_customer.in_(id_customer))
+        query = query.filter(OrderCustomer.id_customer.in_(id_customer))
     if id_gudang is not None:
-        query = query.filter(Gudang.id_gudang.in_(id_gudang))
+        query = query.filter(OrderCustomer.id_gudang.in_(id_gudang))
+
+    # if len(disconnect_servers) > 0:
+    #     query = query.filter(OrderCustomer.id_gudang.not_in(disconnect_servers))
+    #     warning_message = {
+    #         "details": "Some server is disconnected",
+    #         "disconnected_servers": disconnect_servers
+    #     }
+    # else:
+    #     warning_message = None
 
     orders = query.all() 
 
     orders_clean = [{
         "id_order": d[0],
-        "nama": d[1],
-        "no_telp": d[2],
-        "lokasi_gudang": d[3],
-        "tanggal_order": d[4]
+        "id_customer": d[1],
+        "nama": d[2],
+        "no_telp": d[3],
+        "id_gudang": d[4],
+        "lokasi_gudang": d[5],
+        "tanggal_order": d[6].strftime("%Y-%m-%d, %H.%M.%S")
     } for d in orders]
 
     results = {
         "status": "success",
         "message": "Orders retrieved successfully",
         "data": orders_clean
+        # "warning": warning_message
     }
 
     return results
@@ -248,15 +336,19 @@ def read_order_details(
     db: Session=Depends(get_db)
 ):
     order_items = db.query(
+        OrderCustomerItem.id_barang,
         Barang.nama_barang,
         OrderCustomerItem.jumlah
     ).join(
         Barang, Barang.id_barang == OrderCustomerItem.id_barang
     ).filter(OrderCustomerItem.id_order == id_order).all()
 
+    id_gudang = db.query(OrderCustomer.id_gudang).filter(OrderCustomer.id_order == id_order).one()[0]
+
     order_items_clean = [{
-        "nama_barang": d[0],
-        "jumlah": d[1]
+        "id_barang": d[0],
+        "nama_barang": d[1],
+        "jumlah": d[2]
     } for d in order_items]
 
     results = {
@@ -264,11 +356,55 @@ def read_order_details(
         "message": "Order details retrieved successfully",
         "data": {
             "id_order": id_order,
+            "id_gudang": id_gudang,
             "order_items": order_items_clean
         }
     }
 
     return results
+
+@app.delete("/api/orders/{id_order}", tags=["Orders"])
+def delete_order(
+    id_order: int,
+    db: Session=Depends(get_db)
+):  
+    db.query(OrderCustomerItem).filter(OrderCustomerItem.id_order == id_order).delete()
+    orders = db.query(OrderCustomer).filter(OrderCustomer.id_order == id_order).first()
+
+    db.delete(orders)
+    db.commit()
+
+    results = {
+        "status": "success",
+        "message": "Order deleted successfully"
+    }
+
+    return results
+
+# @app.post("/api/orders/{id_order}", tags=["Orders"])
+# def create_order_item(
+#     id_order: int,
+#     data: OrderCustomerItemCreate,
+#     db: Session=Depends(get_db)
+# ):
+#     new_order_item = OrderCustomerItem(
+#         id_order=id_order,
+#         id_barang=data.id_barang,
+#         jumlah=data.jumlah
+#     )
+
+#     db.add(new_order_item)
+#     db.flush()
+#     db.commit()
+#     db.refresh(new_order_item)
+
+#     results = {
+#         "status": "success",
+#         "message": "Orders retrieved successfully",
+#         "data": new_order_item
+#     }
+
+#     return results
 
 @app.put("/api/orders/{id_order}/products/{id_barang}", tags=["Orders"])
 def update_order_item(

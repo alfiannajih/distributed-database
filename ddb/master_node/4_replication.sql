@@ -15,7 +15,7 @@ CREATE TABLE "supplier" (
 -- Replicate: Kategori
 CREATE PUBLICATION kategori_pub FOR TABLE kategori_barang;
 
--- Replicate: Products
+-- Replicate: Barang
 CREATE PUBLICATION barang_pub FOR TABLE barang_core;
 
 -- Replicate: Customer

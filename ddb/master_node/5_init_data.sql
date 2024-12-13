@@ -1,28 +1,3 @@
--- SELECT PG_SLEEP(2);
-
--- -- Insert: Products
--- INSERT INTO "products" (
---     "product_name",
---     "description",
---     "price",
---     "category"
--- ) VALUES 
--- ('Beras Premium', 'Beras organik kualitas premium.', 12000, 'Makanan Pokok'),
--- ('Minyak Goreng', 'Minyak goreng kelapa sawit 1 liter.', 18000, 'Kebutuhan Dapur'),
--- ('Gula Pasir', 'Gula pasir putih 1 kg.', 13500, 'Kebutuhan Dapur'),
--- ('Sabun Cuci', 'Piring Sabun cair untuk mencuci piring 800 ml.', 12000, 'Kebersihan'),
--- ('Teh Hijau', 'Teh hijau celup 25 kantong.', 23000, 'Minuman'),
--- ('Kopi Bubuk', 'Kopi robusta bubuk 250 gram.', 28000, 'Minuman'),
--- ('Air Mineral', 'Galon Air mineral isi ulang 19 liter.', 25000, 'Minuman'),
--- ('Mi Instan', 'Mi instan rasa ayam bawang.', 3000, 'Makanan Ringan'),
--- ('Saus Sambal', 'Saus sambal botol 275 ml.', 9000, 'Kebutuhan Dapur'),
--- ('Pasta Gigi', 'Pasta gigi herbal 120 gram.', 15000, 'Perawatan Diri'),
--- ('Sikat Gigi', 'Sikat gigi dengan bulu halus.', 10000, 'Perawatan Diri'),
--- ('Telur Ayam', 'Telur ayam kampung 1 kg.', 24000, 'Makanan Pokok'),
--- ('Sabun Mandi', 'Sabun mandi cair 500 ml.', 20000, 'Kebersihan'),
--- ('Kecap Manis', 'Kecap manis botol 600 ml.', 12000, 'Kebutuhan Dapur'),
--- ('Tisu Gulung', 'Tisu gulung isi 10 roll.', 30000, 'Kebersihan');
-
 SELECT PG_SLEEP(2);
 
 INSERT INTO "kategori_barang"
@@ -43,25 +18,6 @@ VALUES
 (13, 'Furniture'),
 (14, 'Perlengkapan Dapur'),
 (15, 'Hobi & Koleksi)');
-
--- INSERT INTO "customer"
--- ("nama", "alamat", "no_telp")
--- VALUES
--- ('Ahmad Fauzi', 'Jl. Merdeka No. 45, Jakarta', '081234567890'),
--- ('Siti Nurhaliza', 'Jl. Sudirman No. 12, Bandung', '082134567891'),
--- ('Budi Santoso', 'Jl. Kartini No. 9, Surabaya', '081334567892'),
--- ('Ani Lestari', 'Jl. Diponegoro No. 34, Yogyakarta', '082234567893'),
--- ('Dian Kurniawan', 'Jl. Ahmad Yani No. 56, Semarang', '081434567894'),
--- ('Fajar Setiawan', 'Jl. Raya Bogor No. 78, Bogor', '082334567895'),
--- ('Rini Wulandari', 'Jl. Gajah Mada No. 21, Malang', '081534567896'),
--- ('Hadi Wijaya', 'Jl. Pemuda No. 14, Medan', '082434567897'),
--- ('Linda Sari', 'Jl. Panglima Polim No. 5, Palembang', '081634567898'),
--- ('Rahmat Hidayat', 'Jl. Antasari No. 88, Balikpapan', '082534567899'),
--- ('Tina Maharani', 'Jl. Sutomo No. 7, Makassar', '081734567800'),
--- ('Bayu Pratama', 'Jl. Imam Bonjol No. 40, Denpasar', '082634567801'),
--- ('Citra Andini', 'Jl. Slamet Riyadi No. 22, Solo', '081834567802'),
--- ('Eko Saputra', 'Jl. Surapati No. 15, Pontianak', '082734567803'),
--- ('Maya Kartika', 'Jl. Sisingamangaraja No. 29, Pekanbaru', '081934567804');
 
 INSERT INTO "barang"
 ("id_kategori", "nama_barang", "harga", "deskripsi_barang", "berat", "panjang", "lebar", "tinggi")
@@ -124,9 +80,3 @@ VALUES
 (7, 'Adidas'),
 (8, 'Miniso'),
 (9, 'Xiaomi');
-
--- INSERT INTO "transaksi"
--- ("tanggal_transaksi", "customer_id")
--- VALUES
--- ('2024-12-08 12:05:06', 2),
--- ('2024-12-08 15:05:06', 7);
