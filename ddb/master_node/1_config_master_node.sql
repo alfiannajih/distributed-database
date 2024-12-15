@@ -6,7 +6,7 @@ ALTER SYSTEM SET max_replication_slots = 32;
 ALTER SYSTEM SET max_wal_senders = 16;
 
 -- Foreign Server 1
-CREATE SERVER server_1 FOREIGN DATA WRAPPER postgres_fdw OPTIONS (dbname 'postgres', host '10.42.0.86', port '5432');
+CREATE SERVER server_1 FOREIGN DATA WRAPPER postgres_fdw OPTIONS (dbname 'postgres', host '10.42.0.86', port '5433');
 CREATE USER MAPPING FOR postgres SERVER server_1 OPTIONS (user 'postgres', password 'postgres');
 
 -- Foreign Server 2 
