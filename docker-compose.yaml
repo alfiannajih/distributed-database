@@ -1,6 +1,9 @@
 x-node: &node
   image: postgres:13
-  env_file: ".env"
+  environment:
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+    - POSTGRES_DB=postgres
   networks:
     - tbd-ddb
 
@@ -38,11 +41,12 @@ services:
       - ./ddb/child_node/1_init_table_child_node.sql:/docker-entrypoint-initdb.d/1_init_table.sql
       - ./ddb/child_node/node_1/2_replicate_master_node.sql:/docker-entrypoint-initdb.d/2_replicate_master_node.sql
       - ./ddb/child_node/node_1/3_init_data.sql:/docker-entrypoint-initdb.d/3_init_data.sql
+      - ./custom.conf:/var/lib/postgresql/data/pg_hba.conf
       # - ./init_db.sh:/docker-entrypoint-initdb.d/1_init_db.sh
     healthcheck:
       test: pg_isready -U postgres
-    depends_on:
-      - master-node
+    # depends_on:
+    #   - master-node
 
   node-2:
     <<: *node
@@ -53,11 +57,12 @@ services:
       - ./ddb/child_node/1_init_table_child_node.sql:/docker-entrypoint-initdb.d/1_init_table.sql
       - ./ddb/child_node/node_2/2_replicate_master_node.sql:/docker-entrypoint-initdb.d/2_replicate_master_node.sql
       - ./ddb/child_node/node_2/3_init_data.sql:/docker-entrypoint-initdb.d/3_init_data.sql
+      - ./custom.conf:/var/lib/postgresql/data/pg_hba.conf
       # - ./init_db.sh:/docker-entrypoint-initdb.d/init_db.sh
     healthcheck:
       test: pg_isready -U postgres
-    depends_on:
-      - master-node
+    # depends_on:
+    #   - master-node
 
   node-3:
     <<: *node
@@ -66,6 +71,7 @@ services:
       - "5435:5432"
     volumes:
       - ./ddb/child_node/node_3:/docker-entrypoint-initdb.d
+      - ./custom.conf:/var/lib/postgresql/data/pg_hba.conf
     healthcheck:
       test: pg_isready -U postgres
 
