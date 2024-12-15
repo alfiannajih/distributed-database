@@ -1,0 +1,2 @@
+# adhoc setup
+nmcli dev wifi hotspot ifname wlp2s0 ssid MyAdHocNetwork password mypassword
